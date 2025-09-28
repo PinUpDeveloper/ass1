@@ -58,6 +58,10 @@ public class Metrics {
         return maxRecursionDepth;
     }
 
+    public void addAllocations(int count) {
+        allocations += count;
+    }
+
     public void reset() {
         comparisons = 0;
         allocations = 0;
