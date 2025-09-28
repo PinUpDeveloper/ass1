@@ -1,43 +1,33 @@
 package org.example.metrics;
 
 public class Metrics {
-    private long comparisons = 0;
-    private long allocations = 0;
+
+    private int comparisons = 0;
+    private int allocations = 0;
+
     private int currentDepth = 0;
-    private int maxDepth = 0;
+    private int maxRecursionDepth = 0;
+
     private long startTime = 0;
     private long endTime = 0;
 
-    public void reset() {
-        comparisons = 0;
-        allocations = 0;
-        currentDepth = 0;
-        maxDepth = 0;
-        startTime = 0;
-        endTime = 0;
-    }
-
     public void incrementComparisons() {
         comparisons++;
-    }
-
-    public void addComparisons(long count) {
-        comparisons += count;
     }
 
     public void incrementAllocations() {
         allocations++;
     }
 
-    public void addAllocations(long count) {
-        allocations += count;
+    public void updateRecursionDepth(int depth) {
+        if (depth > maxRecursionDepth) {
+            maxRecursionDepth = depth;
+        }
     }
 
     public void enterRecursion() {
         currentDepth++;
-        if (currentDepth > maxDepth) {
-            maxDepth = currentDepth;
-        }
+        updateRecursionDepth(currentDepth);
     }
 
     public void exitRecursion() {
@@ -52,31 +42,28 @@ public class Metrics {
         endTime = System.nanoTime();
     }
 
-    public long getTimeNanos() {
+    public long getElapsedTimeNano() {
         return endTime - startTime;
     }
 
-    public double getTimeMillis() {
-        return (endTime - startTime) / 1_000_000.0;
-    }
-
-    public long getComparisons() {
+    public int getComparisons() {
         return comparisons;
     }
 
-    public long getAllocations() {
+    public int getAllocations() {
         return allocations;
     }
 
-    public int getMaxDepth() {
-        return maxDepth;
+    public int getMaxRecursionDepth() {
+        return maxRecursionDepth;
     }
 
-    @Override
-    public String toString() {
-        return "Time(ms): " + getTimeMillis() +
-                ", Comparisons: " + comparisons +
-                ", Allocations: " + allocations +
-                ", MaxDepth: " + maxDepth;
+    public void reset() {
+        comparisons = 0;
+        allocations = 0;
+        currentDepth = 0;
+        maxRecursionDepth = 0;
+        startTime = 0;
+        endTime = 0;
     }
 }
