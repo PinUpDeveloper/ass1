@@ -1,35 +1,36 @@
 package org.example.algos;
 
 import org.example.metrics.Metrics;
-import org.example.util.Util;
-
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Random;
 
 public class ClosestPair {
 
-    public static double findClosest(Point[] points, Metrics metrics) {
+    public static Pair closestPair(Point[] points, Metrics metrics) {
         Point[] px = points.clone();
         Point[] py = points.clone();
         Arrays.sort(px, Comparator.comparingDouble(p -> p.x));
         Arrays.sort(py, Comparator.comparingDouble(p -> p.y));
-        metrics.addAllocations(px.length * 2); // px and py clones
 
-        return closest(px, py, 0, px.length - 1, metrics);
+        return closest(px, py, 0, points.length - 1, metrics);
     }
 
-    private static double closest(Point[] px, Point[] py, int left, int right, Metrics metrics) {
-        metrics.enterRecursion();
-
+    private static Pair closest(Point[] px, Point[] py, int left, int right, Metrics metrics) {
         if (right - left <= 3) {
             double minDist = Double.POSITIVE_INFINITY;
+            Pair closestPair = null;
+
             for (int i = left; i <= right; i++) {
                 for (int j = i + 1; j <= right; j++) {
-                    minDist = Math.min(minDist, distance(px[i], px[j], metrics));
+                    double dist = distance(px[i], px[j], metrics);
+                    if (dist < minDist) {
+                        minDist = dist;
+                        closestPair = new Pair(px[i], px[j]);
+                    }
                 }
             }
-            metrics.exitRecursion();
-            return minDist;
+            return closestPair;
         }
 
         int mid = (left + right) / 2;
@@ -46,39 +47,51 @@ public class ClosestPair {
                 pyr[ri++] = py[i];
             }
         }
-        metrics.addAllocations(pyl.length + pyr.length);
 
-        double dl = closest(px, pyl, left, mid, metrics);
-        double dr = closest(px, pyr, mid + 1, right, metrics);
+        Pair closestLeft = closest(px, pyl, left, mid, metrics);
+        Pair closestRight = closest(px, pyr, mid + 1, right, metrics);
 
-        double d = Math.min(dl, dr);
+        double leftDist = distance(closestLeft.p1, closestLeft.p2, metrics);
+        double rightDist = distance(closestRight.p1, closestRight.p2, metrics);
+        double minDist = Math.min(leftDist, rightDist);
+
+        Pair closest = (minDist == leftDist) ? closestLeft : closestRight;
 
         Point[] strip = new Point[right - left + 1];
         int stripSize = 0;
 
         for (int i = 0; i < py.length; i++) {
-            if (Math.abs(py[i].x - midPoint.x) < d) {
+            if (Math.abs(py[i].x - midPoint.x) < minDist) {
                 strip[stripSize++] = py[i];
             }
         }
 
-        metrics.addAllocations(stripSize);
-
-        double minStrip = stripClosest(strip, stripSize, d, metrics);
-
-        metrics.exitRecursion();
-        return Math.min(d, minStrip);
-    }
-
-    private static double stripClosest(Point[] strip, int size, double d, Metrics metrics) {
-        double min = d;
-
-        for (int i = 0; i < size; ++i) {
-            for (int j = i + 1; j < size && (strip[j].y - strip[i].y) < min; ++j) {
-                min = Math.min(min, distance(strip[i], strip[j], metrics));
+        Pair stripClosestPair = stripClosest(strip, stripSize, minDist, metrics);
+        if (stripClosestPair != null) {
+            double stripDist = distance(stripClosestPair.p1, stripClosestPair.p2, metrics);
+            if (stripDist < minDist) {
+                closest = stripClosestPair;
+                minDist = stripDist;
             }
         }
-        return min;
+
+        return closest;
+    }
+
+    private static Pair stripClosest(Point[] strip, int size, double d, Metrics metrics) {
+        Pair closestPair = null;
+        double minDist = d;
+
+        for (int i = 0; i < size; i++) {
+            for (int j = i + 1; j < size && (strip[j].y - strip[i].y) < minDist; j++) {
+                double dist = distance(strip[i], strip[j], metrics);
+                if (dist < minDist) {
+                    minDist = dist;
+                    closestPair = new Pair(strip[i], strip[j]);
+                }
+            }
+        }
+        return closestPair;
     }
 
     private static double distance(Point p1, Point p2, Metrics metrics) {
@@ -88,12 +101,46 @@ public class ClosestPair {
         return Math.hypot(dx, dy);
     }
 
+    public static Point[] randomPoints(int n, int maxCoord) {
+        Random rand = new Random();
+        Point[] points = new Point[n];
+        for (int i = 0; i < n; i++) {
+            int x = rand.nextInt(maxCoord);
+            int y = rand.nextInt(maxCoord);
+            points[i] = new Point(x, y);
+        }
+        return points;
+    }
+
     public static class Point {
         public final double x, y;
 
         public Point(double x, double y) {
             this.x = x;
             this.y = y;
+        }
+
+        @Override
+        public String toString() {
+            return "(" + x + ", " + y + ")";
+        }
+    }
+
+    public static class Pair {
+        public final Point p1, p2;
+
+        public Pair(Point p1, Point p2) {
+            this.p1 = p1;
+            this.p2 = p2;
+        }
+
+        public double dist() {
+            return Math.hypot(p1.x - p2.x, p1.y - p2.y);
+        }
+
+        @Override
+        public String toString() {
+            return "(" + p1 + ", " + p2 + ")";
         }
     }
 }
