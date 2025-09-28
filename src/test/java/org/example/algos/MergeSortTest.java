@@ -31,7 +31,7 @@ public class MergeSortTest {
             MergeSort.sort(a, metrics);
 
             assertArrayEquals(expected, a, "MergeSort failed for size " + i);
-            assertTrue(metrics.getMaxDepth() <= (int)(2 * Math.log(i) / Math.log(2)) + 10);
+            assertTrue(metrics.getMaxRecursionDepth() <= (int)(2 * Math.log(i) / Math.log(2)) + 10);
         }
     }
 
